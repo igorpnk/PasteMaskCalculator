@@ -74,7 +74,7 @@ begin
      YU:= Pad.y + Pad.XSizeOnLayer[eTopLayer]/2 - MMsToCoord(Indent);
      YD:= Pad.y - Pad.XSizeOnLayer[eTopLayer]/2 + MMsToCoord(Indent);
      end;
-
+       
      Region := PCBServer.PCBObjectFactory(eRegionObject, eNoDimension, eCreate_Default);
      Contour2 := PCBServer.PCBContourFactory();
 
