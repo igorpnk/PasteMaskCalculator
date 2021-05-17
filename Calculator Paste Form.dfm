@@ -150,5 +150,15 @@ object Form1: TForm1
       TabOrder = 7
       OnClick = btAutoRotateClick
     end
+    object btClear: TButton
+      Left = 136
+      Top = 151
+      Width = 75
+      Height = 25
+      Caption = 'Clear'
+      Enabled = False
+      TabOrder = 8
+      OnClick = btClearClick
+    end
   end
 end

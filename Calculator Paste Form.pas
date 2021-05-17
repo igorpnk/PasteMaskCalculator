@@ -114,34 +114,6 @@ begin
 end;
 
 
-
-procedure TForm1.Button2Click(Sender: TObject);
-var
-Board          : IPCB_Board;
-IteratorHandle : IPCB_BoardIterator;
-Region2         : IPCB_Region;
-
-begin
-     Board := PCBServer.GetCurrentPCBBoard;
-     PCBServer.PreProcess;
-     Board.BeginModify;
-     IteratorHandle := Board.BoardIterator_Create;
-     IteratorHandle.AddFilter_ObjectSet(eRegionObject);
-     IteratorHandle.AddFilter_LayerSet(eTopPaste);
-     IteratorHandle.AddFilter_Method(eProcessAll);
-     Region2 := IteratorHandle.FirstPCBObject; // получаем первый компонент
-     While (Region2 <> Nil) Do
-     Begin
-          Board.RemovePCBObject(Region2);
-          Region2 := IteratorHandle.NextPCBObject;
-     End;
-     Board.BoardIterator_Destroy(IteratorHandle);
-     Board.EndModify;
-     Board.GraphicallyInvalidate;
-     PCBServer.PostProcess;
-     Board.ViewManager_FullUpdate;
-end;
-
 procedure TForm1.btAutoRotateClick(Sender: TObject);
 var
 Board         : IPCB_Board;
@@ -167,3 +139,29 @@ begin
 
 end;
 
+procedure TForm1.btClearClick(Sender: TObject);
+var
+Board          : IPCB_Board;
+IteratorHandle : IPCB_BoardIterator;
+Region2         : IPCB_Region;
+
+begin
+     Board := PCBServer.GetCurrentPCBBoard;
+     PCBServer.PreProcess;
+     Board.BeginModify;
+     IteratorHandle := Board.BoardIterator_Create;
+     IteratorHandle.AddFilter_LayerSet(MkSet(eTopPaste));
+     IteratorHandle.AddFilter_ObjectSet(MkSet(eRegionObject));
+     IteratorHandle.AddFilter_Method(eProcessAll);
+     Region2 := IteratorHandle.FirstPCBObject; // получаем первый компонент
+     While (Region2 <> Nil) Do
+     Begin
+          Board.RemovePCBObject(Region2);
+          Region2 := IteratorHandle.NextPCBObject;
+     End;
+     Board.BoardIterator_Destroy(IteratorHandle);
+     Board.EndModify;
+     Board.GraphicallyInvalidate;
+     PCBServer.PostProcess;
+     Board.ViewManager_FullUpdate;
+end;
