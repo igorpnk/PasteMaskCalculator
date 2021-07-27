@@ -13,7 +13,15 @@ Begin
           Exit;
      end;
 
+     if (Board.DisplayUnit = 1) then
+     begin
+          ShowError('Switch to Metric Units!');
+          Exit;
+     end;
+
      Form1.Show;
+
+
 
 End;
 
@@ -330,5 +338,171 @@ end;
 procedure TForm1.lbWolfiitClick(Sender: TObject);
 begin
  RunSystemCommand('cmd /c start https://t.me/Wolfiit');
+end;
+
+procedure TForm1.btnGenerateMatrixFormClick(Sender: TObject);
+var
+Padcache      : TPadCache;
+XL,YU,XR,YD   : Tcoord;
+X2L,Y2U       : Tcoord;
+X2R,Y2D       : Tcoord;
+X,Y           : Tcoord;
+Indent        : Double;
+Rad,RadU      : Double;
+Region        : IPCB_Region;
+Board         : IPCB_Board;
+GeomPoly      : IPCB_GeometricPolygon;
+Contour       : IPCB_Contour;
+Contour2      : IPCB_Contour;
+Number        : Double;
+track         : IPCB_Track;
+RegPol        : IPCB_Polygon;
+NewPoly       : IPCB_Polygon;
+prim          : IPCB_Primitive;
+text          : String;
+Pad           : IPCB_Pad;
+i,j           : integer;
+CountX, CountY: integer;
+Count         : integer;
+SpaceX, SpaceY: Double;
+DimX, DimY    : Double;
+StepX, StepY  : Double;
+
+
+begin
+     Board := PCBServer.GetCurrentPCBBoard;
+
+     if Board.SelectecObject[0] = nil then // check for open circuit board
+     Begin
+          ShowError('Please select Pad!');
+          Exit;
+     end;
+
+     Pad := Board.SelectecObject[0];
+
+     if cbAutoDetect.Checked then
+     begin
+       btAutoRotateClick(Sender);
+     end;
+
+     PCBServer.PreProcess;
+
+     Board.DispatchMessage(null, null, PCBM_ProcessStart, null);
+
+
+     Str2Double(tbMatrixIndent.Text,Indent);
+     Str2Double(tbMatrixRad.Text,Rad);
+     Str2Int(tbMatrixCountX.Text,CountX);
+     Str2Int(tbMatrixCountY.Text,CountY);
+
+     Count := CountX * CountY;
+
+     Padcache := Pad.Cache;
+
+     Padcache.PasteMaskExpansion        := MMsToCoord(-2539);
+     Padcache.PasteMaskExpansionValid   := eCacheManual;
+     pad.Cache := Padcache;
+
+     XL:= Pad.x - Pad.XSizeOnLayer[eTopLayer]/2 + MMsToCoord(Indent);
+     XR:= Pad.x + Pad.XSizeOnLayer[eTopLayer]/2 - MMsToCoord(Indent);
+     YU:= Pad.y + Pad.YSizeOnLayer[eTopLayer]/2 - MMsToCoord(Indent);
+     YD:= Pad.y - Pad.YSizeOnLayer[eTopLayer]/2 + MMsToCoord(Indent);
+
+     if (rbRight.Checked | rbLeft.Checked) then
+     begin
+          XL:= Pad.x - Pad.YSizeOnLayer[eTopLayer]/2 + MMsToCoord(Indent);
+          XR:= Pad.x + Pad.YSizeOnLayer[eTopLayer]/2 - MMsToCoord(Indent);
+          YU:= Pad.y + Pad.XSizeOnLayer[eTopLayer]/2 - MMsToCoord(Indent);
+          YD:= Pad.y - Pad.XSizeOnLayer[eTopLayer]/2 + MMsToCoord(Indent);
+     end;
+
+     if (rbMatrixSpacing.Checked) then
+     Begin
+         Str2Double(tbMarixX.Text,SpaceX);
+         Str2Double(tbMarixY.Text,SpaceY);
+
+         if CountX >1 then
+         begin
+              DimX :=  RoundTo((((CoordToMMs(XR) -CoordToMMs(XL)) - SpaceX * (CountX-1))/CountX),-4);
+         end else
+         begin
+              DimX :=  RoundTo((CoordToMMs(XR) -CoordToMMs(XL)),-4);
+         end;
+
+         if CountY >1 then
+         begin
+              DimY :=   RoundTo((((CoordToMMs(YU) -CoordToMMs(YD)) - SpaceY * (CountY-1))/CountY),-4);
+         end else
+         begin
+              DimY :=  RoundTo((CoordToMMs(YU) -CoordToMMs(YD)),-4);
+         end;
+     end;
+
+     if (rbMatrixRect.Checked) then
+     Begin
+         Str2Double(tbMarixX.Text,DimX);
+         Str2Double(tbMarixY.Text,DimY);
+
+         if CountX >1 then
+         begin
+              SpaceX :=  RoundTo((((CoordToMMs(XR) -CoordToMMs(XL)) - DimX * CountX)/(CountX-1)),-4);
+         end else
+         begin
+              SpaceX := 0;
+         end;
+
+         if CountY >1 then
+         begin
+              SpaceY :=  RoundTo((((CoordToMMs(YU) -CoordToMMs(YD)) - DimY * CountY)/(CountY-1)),-4);
+         end else
+         begin
+              SpaceY := 0;
+         end;
+     end;
+
+     StepX := SpaceX + DimX;
+     StepY := SpaceY + DimY;
+
+     For i :=0 to countY-1 do
+     For J :=0 to countX-1 do
+     Begin
+          Region := PCBServer.PCBObjectFactory(eRegionObject, eNoDimension, eCreate_Default);
+          Contour2 := PCBServer.PCBContourFactory();
+          Region.Layer := eTopPaste;
+          X := XL + MMsToCoord(DimX/2) + MMsToCoord(StepX*j);
+          Y := YD + MMsToCoord(DimY/2) + MMsToCoord(StepY*i);
+          PCBServer.PCBContourMaker.ArcResolution := MMsToCoord(0.001);
+
+          X2L := X - MMsToCoord(DimX/2);
+          X2R := X + MMsToCoord(DimX/2);
+          Y2U := Y + MMsToCoord(DimY/2);
+          Y2D := Y - MMsToCoord(DimY/2);
+
+          PCBServer.PCBContourMaker.AddArcToContour(Contour2,270,180,X2L+MMsToCoord(Rad),Y2D+MMsToCoord(Rad),MMsToCoord(Rad),true);
+          PCBServer.PCBContourMaker.AddArcToContour(Contour2,180,90,X2L+MMsToCoord(Rad),Y2U-MMsToCoord(Rad),MMsToCoord(Rad),true);
+          PCBServer.PCBContourMaker.AddArcToContour(Contour2,90,0,X2R-MMsToCoord(Rad),Y2U-MMsToCoord(Rad),MMsToCoord(Rad),true);
+          PCBServer.PCBContourMaker.AddArcToContour(Contour2,0,270,X2R-MMsToCoord(Rad),Y2D+MMsToCoord(Rad),MMsToCoord(Rad),true);
+          Contour2.RotateAboutPoint(Pad.Rotation,pad.x,Pad.y);
+
+          if (rbRight.Checked | rbLeft.Checked)then
+             Contour2.RotateAboutPoint(-90,pad.x,Pad.y);
+
+          if (rbDown.Checked | rbLeft.Checked) then
+             Contour2.RotateAboutPoint(180,pad.x,Pad.y);
+
+          GeomPoly := PCBServer.PCBGeometricPolygonFactory();
+          GeomPoly.AddContour(Contour2);
+          Region.GeometricPolygon := GeomPoly;
+
+          Region.GraphicallyInvalidate;
+          Board.AddPCBObject(Region);
+          Board.DispatchMessage(Board.I_ObjectAddress, c_Broadcast, PCBM_BoardRegisteration, Region.I_ObjectAddress);
+     end;
+
+
+     Board.DispatchMessage(null, null, PCBM_ProcessEnd, null);
+
+     PCBServer.PostProcess;
+     Board.DispatchMessage(c_FromSystem, c_BroadCast, PCBM_YieldToRobots, c_NoEventData);
 end;
 
