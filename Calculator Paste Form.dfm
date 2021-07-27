@@ -118,7 +118,7 @@ object Form1: TForm1
     Height = 13
     Caption = 'Made By:'
   end
-  object Label2: TLabel
+  object lbWolfiit: TLabel
     Left = 344
     Top = 504
     Width = 40
@@ -131,7 +131,7 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    OnClick = Label2Click
+    OnClick = lbWolfiitClick
   end
   object GroupBox1: TGroupBox
     Left = 8

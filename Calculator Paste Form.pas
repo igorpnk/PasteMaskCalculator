@@ -327,8 +327,8 @@ begin
 end;
 
 
-procedure TForm1.Label2Click(Sender: TObject);
-begin   
-    ShellLinkResolve('https://t.me/Wolfiit');
+procedure TForm1.lbWolfiitClick(Sender: TObject);
+begin
+ RunSystemCommand('cmd /c start https://t.me/Wolfiit');
 end;
 
